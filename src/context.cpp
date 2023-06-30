@@ -3,7 +3,7 @@
 constexpr SDL_Color NormalTileColor = {150, 150, 150, 255};
 constexpr SDL_Color HoverTileColor = {200, 200, 200, 255};
 constexpr SDL_Color BorderTileColor = {0, 0, 0, 255};
-constexpr SDL_Color NakedTileColor = {50, 50, 50, 255};
+constexpr SDL_Color NakedTileColor = {100, 100, 100, 255};
 constexpr SDL_Color KeyColor = {118, 66, 138, 255};
 
 std::unique_ptr<Context> Context::instance_ = nullptr;
@@ -221,17 +221,18 @@ void Context::drawOneTile(int x, int y, const Tile& tile) {
             renderer.DrawTexture(mineImage.get(), SDL_Rect{0, 0, 32, 32}, tileX,
                                  tileY);
         } else {
+            // 线绘制底色
+            renderer.SetColor(NakedTileColor);
+            renderer.FillRect(rect);
+            renderer.SetColor(BorderTileColor);
+            renderer.DrawRect(rect);
+            // 再绘制数字
             int mineCount = tile.value;
             if (mineCount > 0) {
                 renderer.DrawTexture(
                     numberImage.get(),
                     SDL_Rect{309 / 8 * (mineCount - 1), 0, 32, 32}, tileX,
                     tileY);
-            } else {
-                renderer.SetColor(NakedTileColor);
-                renderer.FillRect(rect);
-                renderer.SetColor(BorderTileColor);
-                renderer.DrawRect(rect);
             }
         }
     } else {
