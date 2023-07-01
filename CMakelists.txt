@@ -18,13 +18,14 @@ if(WIN32)
 endif()
 
 include(cmake/FindSDL2.cmake)
+include(cmake/FindSDL2_ttf.cmake)
 include(cmake/copydll.cmake)
 include(cmake/copyresources.cmake)
 
 aux_source_directory(src SRC)
 add_executable(mine-sweep ${SRC})
 target_include_directories(mine-sweep PRIVATE include)
-target_link_libraries(mine-sweep PRIVATE SDL2)
+target_link_libraries(mine-sweep PRIVATE SDL2 SDL2_ttf)
 target_compile_features(mine-sweep PRIVATE cxx_std_17)
 
 CopyDLL(mine-sweep)
