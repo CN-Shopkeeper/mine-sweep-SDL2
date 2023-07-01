@@ -52,18 +52,32 @@ void floodFill(Context& ctx, Map& map, int x, int y) {
                 continue;
             }
             if (tile_.value == 0) {
-                if (map.IsIn(point.x - 1, point.y)) {
-                    s.push({point.x - 1, point.y});
+                // queen
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        if (dx == 0 && dy == 0) {
+                            continue;
+                        }
+                        int detectX = point.x + dx;
+                        int detectY = point.y + dy;
+                        if (map.IsIn(detectX, detectY)) {
+                            s.push({detectX, detectY});
+                        }
+                    }
                 }
-                if (map.IsIn(point.x + 1, point.y)) {
-                    s.push({point.x + 1, point.y});
-                }
-                if (map.IsIn(point.x, point.y - 1)) {
-                    s.push({point.x, point.y - 1});
-                }
-                if (map.IsIn(point.x, point.y + 1)) {
-                    s.push({point.x, point.y + 1});
-                }
+                // rook
+                // if (map.IsIn(point.x - 1, point.y)) {
+                //     s.push({point.x - 1, point.y});
+                // }
+                // if (map.IsIn(point.x + 1, point.y)) {
+                //     s.push({point.x + 1, point.y});
+                // }
+                // if (map.IsIn(point.x, point.y - 1)) {
+                //     s.push({point.x, point.y - 1});
+                // }
+                // if (map.IsIn(point.x, point.y + 1)) {
+                //     s.push({point.x, point.y + 1});
+                // }
             }
         }
     }
