@@ -4,6 +4,7 @@
 
 int main(int argc, char** argv) {
     SDL_Init(SDL_INIT_EVERYTHING);
+    TTF_Init();
     Context ::Init();
 
     auto& ctx = Context::Inst();
@@ -24,6 +25,7 @@ int main(int argc, char** argv) {
         renderer.SetColor(SDL_Color{200, 200, 200, 255});
         renderer.Clear();
         ctx.DrawMap();
+        ctx.DrawMessage();
 
         renderer.Present();
 
@@ -31,6 +33,7 @@ int main(int argc, char** argv) {
     }
 
     Context::Quit();
+    TTF_Quit();
     SDL_Quit();
     return 0;
 }

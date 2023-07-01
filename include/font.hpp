@@ -8,5 +8,6 @@ class Font final {
     std::unique_ptr<TTF_Font, decltype(FontDestroy)> font_;
 
    public:
+    friend class Context;
     Font(const std::string& fontPath, int fontSize);
 };

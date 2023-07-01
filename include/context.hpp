@@ -1,4 +1,5 @@
 #pragma once
+#include "font.hpp"
 #include "matrix.hpp"
 #include "mouse.hpp"
 #include "pch.hpp"
@@ -18,7 +19,8 @@ class Tile {
 
 constexpr int TileLen = 32;
 constexpr int WindowWidth = TileLen * 20;
-constexpr int WindowHeight = TileLen * 20;
+constexpr int MessageTitleHeight = 64;
+constexpr int WindowHeight = TileLen * 20 + MessageTitleHeight;
 constexpr int MineCount = 50;
 
 using Map = Matrix<Tile>;
@@ -35,7 +37,8 @@ class Context final {
     static std::unique_ptr<Context> instance_;
     bool debugMode_ = false;
 
-    Context(Window&& window, Renderer&& renderer, Map&& map, int mineCount);
+    Context(Window&& window, Renderer&& renderer, Font&& font, Map&& map,
+            int mineCount);
 
     void drawOneTile(int x, int y, const Tile& tile);
     void handleMouseLeftBtnDown(const SDL_Point&);
@@ -56,6 +59,7 @@ class Context final {
 
     Window window;
     Renderer renderer;
+    Font font;
     Map map;
     Mouse mouse;
     int nakedCount;
@@ -65,14 +69,15 @@ class Context final {
         if (!instance_) {
             Window window("mine-sweep", WindowWidth, WindowHeight);
             Renderer renderer(window);
+            Font font("resources/font/simsun.ttc", 32);
             // 因为构造函数是private的，所以不能make_unique
             // instance_ = std::make_unique<Context>(std::move(window),
             //                                       std::move(renderer));
-            instance_ = std::unique_ptr<Context>(
-                new Context{std::move(window), std::move(renderer),
-                            createRandomMap(MineCount, WindowWidth / TileLen,
-                                            WindowHeight / TileLen),
-                            MineCount});
+            instance_ = std::unique_ptr<Context>(new Context{
+                std::move(window), std::move(renderer), std::move(font),
+                createRandomMap(MineCount, WindowWidth / TileLen,
+                                (WindowHeight - MessageTitleHeight) / TileLen),
+                MineCount});
         }
     }
 
@@ -86,4 +91,6 @@ class Context final {
     void DrawMap();
     // void HandleEvent(SDL_Event&);
     void HandleEvents(std::vector<SDL_Event>& events);
+
+    void DrawMessage();
 };

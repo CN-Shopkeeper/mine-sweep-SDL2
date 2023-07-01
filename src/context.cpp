@@ -83,7 +83,8 @@ void floodFill(Context& ctx, Map& map, int x, int y) {
     }
 }
 
-Context::Context(Window&& window, Renderer&& renderer, Map&& map, int mineCount)
+Context::Context(Window&& window, Renderer&& renderer, Font&& font, Map&& map,
+                 int mineCount)
     : numberImage(
           LoadTexture(renderer.renderer_.get(), "resources/font.bmp", KeyColor),
           TextureDestroy),
@@ -101,6 +102,7 @@ Context::Context(Window&& window, Renderer&& renderer, Map&& map, int mineCount)
           TextureDestroy),
       window(std::move(window)),
       renderer(std::move(renderer)),
+      font(std::move(font)),
       map(std::move(map)),
       mineCount(mineCount) {}
 
@@ -141,6 +143,11 @@ void Context::handleMouseRightBtnDown(const SDL_Point& p) {
     auto& tile = map.Get(tileCoord.x, tileCoord.y);
 
     if (!tile.isVisiable) {
+        if (tile.isFlaged) {
+            map.AddFlagCount(-1);
+        } else {
+            map.AddFlagCount(1);
+        }
         tile.isFlaged = !tile.isFlaged;
     }
 }
@@ -177,7 +184,6 @@ void Context::handleMouseBothPressing(const SDL_Point& p) {
 }
 
 void Context::handleMouseBothReleased(const SDL_Point& p) {
-    SDL_Log("released fnc");
     auto hightlightOpt = map.GetHightlight();
     if (hightlightOpt.has_value()) {
         auto hightlight = hightlightOpt.value();
@@ -397,8 +403,9 @@ void Context::HandleEvents(std::vector<SDL_Event>& events) {
     mouse.UpdateMouse(mouseEvents);
     if (state != GameState::Gaming) {
         if (mouse.LeftBtn().IsPressed()) {
-            map = createRandomMap(MineCount, WindowWidth / TileLen,
-                                  WindowHeight / TileLen);
+            map =
+                createRandomMap(MineCount, WindowWidth / TileLen,
+                                (WindowHeight - MessageTitleHeight) / TileLen);
             mineCount = MineCount;
             nakedCount = 0;
             state = GameState::Gaming;
@@ -424,26 +431,20 @@ void Context::HandleEvents(std::vector<SDL_Event>& events) {
     }
 }
 
-// void Context::HandleEvent(SDL_Event& e) {
-//     if (state != GameState::Gaming) {
-//         if (e.type == SDL_MOUSEBUTTONDOWN) {
-//             map = createRandomMap(MineCount, WindowWidth / TileLen,
-//                                   WindowHeight / TileLen);
-//             mineCount = MineCount;
-//             nakedCount = 0;
-//             state = GameState::Gaming;
-//         }
-//         return;
-//     }
-//     if (e.type == SDL_MOUSEBUTTONDOWN) {
-//         if (e.button.button == SDL_BUTTON_LEFT) {
-//             handleMouseLeftBtnDown(e.button);
-//         }
-//         if (e.button.button == SDL_BUTTON_RIGHT) {
-//             handleMouseRightBtnDown(e.button);
-//         }
-//     }
-//     if (e.type == SDL_KEYDOWN) {
-//         handleKeyDown(e.key);
-//     }
-// }
+void Context::DrawMessage() {
+    std::string message("地雷总数: ");
+    message.append(std::to_string(mineCount))
+        .append(" / ")
+        .append("已插旗数: ")
+        .append(std::to_string(map.GetFlagCount()));
+
+    auto textSurface = TTF_RenderUTF8_Blended(font.font_.get(), message.c_str(),
+                                              {0, 0, 0, 255});
+    auto textTexture =
+        SDL_CreateTextureFromSurface(renderer.renderer_.get(), textSurface);
+    SDL_Rect rect = {0, 0, textSurface->w, textSurface->h};
+    SDL_FreeSurface(textSurface);
+    renderer.DrawTexture(textTexture, rect, 0,
+                         WindowHeight - MessageTitleHeight * 0.75);
+    SDL_DestroyTexture(textTexture);
+}

@@ -57,5 +57,5 @@ class Matrix final {
 
     int GetFlagCount() const { return flagCount_; }
 
-    void AddFlagCount(int offset) const { flagCount_ += offset; }
+    void AddFlagCount(int offset) { flagCount_ += offset; }
 };
