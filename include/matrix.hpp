@@ -9,11 +9,17 @@ class Matrix final {
     int w_;
     int h_;
 
-    std::optional<SDL_Point> highlight_ = std::nullopt;
+    int flagCount_;
+
+    std::optional<SDL_Point> highlight_;
 
    public:
     Matrix(int w, int h)
-        : data_(std::unique_ptr<T[]>(new T[w * h])), w_(w), h_(h) {}
+        : data_(std::unique_ptr<T[]>(new T[w * h])),
+          w_(w),
+          h_(h),
+          flagCount_(0),
+          highlight_(std::nullopt) {}
 
     void Fill(const T& value) {
         for (int i = 0; i < w_ * h_; i++) {
@@ -48,4 +54,8 @@ class Matrix final {
     void RemoveHeight() { highlight_ = std::nullopt; }
 
     std::optional<SDL_Point> GetHightlight() const { return highlight_; }
+
+    int GetFlagCount() const { return flagCount_; }
+
+    void AddFlagCount(int offset) const { flagCount_ += offset; }
 };
