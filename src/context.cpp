@@ -233,6 +233,9 @@ void Context::handleMouseBothReleased(const SDL_Point& p) {
                     }
                 }
             }
+            if (nakedCount == map.MaxSize() - mineCount) {
+                state = GameState::Win;
+            }
         }
     }
 }
