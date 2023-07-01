@@ -300,6 +300,8 @@ void Context::drawOneTile(int x, int y, const Tile& tile) {
     auto tileY = y * TileLen;
     SDL_Rect rect = {tileX, tileY, TileLen, TileLen};
     SDL_Point mousePos;
+
+    // 先绘制底色
     SDL_GetMouseState(&mousePos.x, &mousePos.y);
     if (SDL_PointInRect(&mousePos, &rect)) {
         renderer.SetColor(HoverTileColor);
@@ -307,30 +309,33 @@ void Context::drawOneTile(int x, int y, const Tile& tile) {
         if (map.GetHightlight().has_value()) {
             auto hightlightCenter = map.GetHightlight().value();
             if (std::abs(hightlightCenter.x - x) <= 1 &&
-                std::abs(hightlightCenter.y - y) <= 1) {
+                std::abs(hightlightCenter.y - y) <= 1 && !tile.isVisiable) {
                 renderer.SetColor(HightlightTileColor);
+            } else {
+                if (tile.isVisiable) {
+                    renderer.SetColor(NakedTileColor);
+                } else {
+                    renderer.SetColor(NormalTileColor);
+                }
+            }
+        } else {
+            if (tile.isVisiable) {
+                renderer.SetColor(NakedTileColor);
             } else {
                 renderer.SetColor(NormalTileColor);
             }
-        } else {
-            renderer.SetColor(NormalTileColor);
         }
     }
     renderer.FillRect(rect);
     renderer.SetColor(BorderTileColor);
     renderer.DrawRect(rect);
 
+    // 再绘制纹理
     if (tile.isVisiable) {
         if (tile.type == Tile::Mine) {
             renderer.DrawTexture(mineImage.get(), SDL_Rect{0, 0, 32, 32}, tileX,
                                  tileY);
         } else {
-            // 线绘制底色
-            renderer.SetColor(NakedTileColor);
-            renderer.FillRect(rect);
-            renderer.SetColor(BorderTileColor);
-            renderer.DrawRect(rect);
-            // 再绘制数字
             int mineCount = tile.value;
             if (mineCount > 0) {
                 renderer.DrawTexture(
@@ -341,11 +346,6 @@ void Context::drawOneTile(int x, int y, const Tile& tile) {
         }
     } else {
         if (tile.isFlaged) {
-            // 线绘制底色
-            renderer.SetColor(NormalTileColor);
-            renderer.FillRect(rect);
-            renderer.SetColor(BorderTileColor);
-            renderer.DrawRect(rect);
             renderer.DrawTexture(flagImage.get(), SDL_Rect{0, 0, 32, 32}, tileX,
                                  tileY);
         }

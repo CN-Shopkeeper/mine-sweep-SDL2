@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
         renderer.Present();
 
-        SDL_Delay(500);
+        SDL_Delay(50);
     }
 
     Context::Quit();
