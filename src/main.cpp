@@ -10,13 +10,16 @@ int main(int argc, char** argv) {
     auto& renderer = ctx.renderer;
     SDL_Event event;
     bool shouldClose = false;
+    std::vector<SDL_Event> events;
     while (!shouldClose) {
+        events.clear();
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 shouldClose = true;
             }
-            ctx.HandleEvent(event);
+            events.push_back(event);
         }
+        ctx.HandleEvents(events);
 
         renderer.SetColor(SDL_Color{200, 200, 200, 255});
         renderer.Clear();
@@ -24,7 +27,7 @@ int main(int argc, char** argv) {
 
         renderer.Present();
 
-        SDL_Delay(30);
+        SDL_Delay(50);
     }
 
     Context::Quit();

@@ -2,6 +2,7 @@
 
 constexpr SDL_Color NormalTileColor = {150, 150, 150, 255};
 constexpr SDL_Color HoverTileColor = {200, 200, 200, 255};
+constexpr SDL_Color HightlightTileColor = {250, 250, 250, 255};
 constexpr SDL_Color BorderTileColor = {0, 0, 0, 255};
 constexpr SDL_Color NakedTileColor = {100, 100, 100, 255};
 constexpr SDL_Color KeyColor = {118, 66, 138, 255};
@@ -104,8 +105,8 @@ Context::Context(Window&& window, Renderer&& renderer, Map&& map, int mineCount)
       map(std::move(map)),
       mineCount(mineCount) {}
 
-void Context::handleMouseLeftBtnDown(const SDL_MouseButtonEvent& e) {
-    auto tileCoord = calcTileCoord(e.x, e.y);
+void Context::handleMouseLeftBtnDown(const SDL_Point& p) {
+    auto tileCoord = calcTileCoord(p.x, p.y);
     if (!map.IsIn(tileCoord.x, tileCoord.y)) {
         return;
     }
@@ -132,8 +133,8 @@ void Context::handleMouseLeftBtnDown(const SDL_MouseButtonEvent& e) {
     }
 }
 
-void Context::handleMouseRightBtnDown(const SDL_MouseButtonEvent& e) {
-    auto tileCoord = calcTileCoord(e.x, e.y);
+void Context::handleMouseRightBtnDown(const SDL_Point& p) {
+    auto tileCoord = calcTileCoord(p.x, p.y);
     if (!map.IsIn(tileCoord.x, tileCoord.y)) {
         return;
     }
@@ -148,6 +149,77 @@ void Context::handleMouseRightBtnDown(const SDL_MouseButtonEvent& e) {
 void Context::handleKeyDown(const SDL_KeyboardEvent& e) {
     if (e.keysym.scancode == SDL_SCANCODE_G) {
         debugMode_ = !debugMode_;
+    }
+}
+
+void Context::handleMouseBothPressed(const SDL_Point& p) {
+    auto tileCoord = calcTileCoord(p.x, p.y);
+    if (!map.IsIn(tileCoord.x, tileCoord.y)) {
+        return;
+    }
+    auto& tile = map.Get(tileCoord.x, tileCoord.y);
+    if (!tile.isVisiable) {
+        return;
+    }
+    map.SetHighlight(calcTileCoord(mouse.Position().x, mouse.Position().y));
+}
+
+void Context::handleMouseBothPressing(const SDL_Point& p) {
+    auto hightlightOpt = map.GetHightlight();
+    if (hightlightOpt.has_value()) {
+        auto hightlight = hightlightOpt.value();
+        auto tileCoord = calcTileCoord(p.x, p.y);
+        if (!map.IsIn(tileCoord.x, tileCoord.y) ||
+            (hightlight.x != tileCoord.x || hightlight.y != tileCoord.y)) {
+            map.RemoveHeight();
+            return;
+        }
+    }
+}
+
+void Context::handleMouseBothReleased(const SDL_Point& p) {
+    SDL_Log("released fnc");
+    auto hightlightOpt = map.GetHightlight();
+    if (hightlightOpt.has_value()) {
+        auto hightlight = hightlightOpt.value();
+        auto tileCoord = calcTileCoord(p.x, p.y);
+        if (!map.IsIn(tileCoord.x, tileCoord.y) ||
+            (hightlight.x != tileCoord.x || hightlight.y != tileCoord.y)) {
+            map.RemoveHeight();
+            return;
+        }
+        auto& center = map.Get(tileCoord.x, tileCoord.y);
+        if (!center.isVisiable) {
+            map.RemoveHeight();
+            return;
+        }
+        int flagCount = 0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                int detectX = tileCoord.x + dx;
+                int detectY = tileCoord.y + dy;
+                if (map.IsIn(detectX, detectY)) {
+                    auto& tile_ = map.Get(detectX, detectY);
+                    if (!tile_.isVisiable && tile_.isFlaged) {
+                        flagCount++;
+                    }
+                }
+            }
+        }
+        if (center.value == flagCount) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    int detectX = tileCoord.x + dx;
+                    int detectY = tileCoord.y + dy;
+                    if (map.IsIn(detectX, detectY)) {
+                        auto& tile_ = map.Get(detectX, detectY);
+                        if (!tile_.isVisiable && !tile_.isFlaged) {
+                            floodFill(*this, map, detectX, detectY);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -224,7 +296,17 @@ void Context::drawOneTile(int x, int y, const Tile& tile) {
     if (SDL_PointInRect(&mousePos, &rect)) {
         renderer.SetColor(HoverTileColor);
     } else {
-        renderer.SetColor(NormalTileColor);
+        if (map.GetHightlight().has_value()) {
+            auto hightlightCenter = map.GetHightlight().value();
+            if (std::abs(hightlightCenter.x - x) <= 1 &&
+                std::abs(hightlightCenter.y - y) <= 1) {
+                renderer.SetColor(HightlightTileColor);
+            } else {
+                renderer.SetColor(NormalTileColor);
+            }
+        } else {
+            renderer.SetColor(NormalTileColor);
+        }
     }
     renderer.FillRect(rect);
     renderer.SetColor(BorderTileColor);
@@ -251,6 +333,11 @@ void Context::drawOneTile(int x, int y, const Tile& tile) {
         }
     } else {
         if (tile.isFlaged) {
+            // 线绘制底色
+            renderer.SetColor(NormalTileColor);
+            renderer.FillRect(rect);
+            renderer.SetColor(BorderTileColor);
+            renderer.DrawRect(rect);
             renderer.DrawTexture(flagImage.get(), SDL_Rect{0, 0, 32, 32}, tileX,
                                  tileY);
         }
@@ -289,9 +376,19 @@ void Context::DrawMap() {
     }
 }
 
-void Context::HandleEvent(SDL_Event& e) {
+void Context::HandleEvents(std::vector<SDL_Event>& events) {
+    std::vector<SDL_Event> mouseEvents;
+    for (auto& e : events) {
+        if (e.type == SDL_KEYDOWN) {
+            handleKeyDown(e.key);
+        } else {
+            // 全都放到mouseEvents中，让它筛选
+            mouseEvents.push_back(e);
+        }
+    }
+    mouse.UpdateMouse(mouseEvents);
     if (state != GameState::Gaming) {
-        if (e.type == SDL_MOUSEBUTTONDOWN) {
+        if (mouse.LeftBtn().IsPressed()) {
             map = createRandomMap(MineCount, WindowWidth / TileLen,
                                   WindowHeight / TileLen);
             mineCount = MineCount;
@@ -300,15 +397,48 @@ void Context::HandleEvent(SDL_Event& e) {
         }
         return;
     }
-    if (e.type == SDL_MOUSEBUTTONDOWN) {
-        if (e.button.button == SDL_BUTTON_LEFT) {
-            handleMouseLeftBtnDown(e.button);
+    if (mouse.LeftBtn().IsPressing() && mouse.RightBtn().IsPressing()) {
+        handleMouseBothPressing(mouse.Position());
+    } else if (mouse.LeftBtn().IsPressed() && mouse.RightBtn().IsPressed()) {
+        handleMouseBothPressed(mouse.Position());
+    } else if (mouse.LeftBtn().IsReleased() && mouse.RightBtn().IsReleased()) {
+        handleMouseBothReleased(mouse.Position());
+        SDL_Log("released");
+
+    } else if (mouse.LeftBtn().IsReleasing() &&
+               mouse.RightBtn().IsReleasing()) {
+        map.RemoveHeight();
+    } else {
+        if (mouse.LeftBtn().IsPressed()) {
+            handleMouseLeftBtnDown(mouse.Position());
         }
-        if (e.button.button == SDL_BUTTON_RIGHT) {
-            handleMouseRightBtnDown(e.button);
+        if (mouse.RightBtn().IsPressed()) {
+            handleMouseRightBtnDown(mouse.Position());
+            SDL_Log("right");
         }
-    }
-    if (e.type == SDL_KEYDOWN) {
-        handleKeyDown(e.key);
     }
 }
+
+// void Context::HandleEvent(SDL_Event& e) {
+//     if (state != GameState::Gaming) {
+//         if (e.type == SDL_MOUSEBUTTONDOWN) {
+//             map = createRandomMap(MineCount, WindowWidth / TileLen,
+//                                   WindowHeight / TileLen);
+//             mineCount = MineCount;
+//             nakedCount = 0;
+//             state = GameState::Gaming;
+//         }
+//         return;
+//     }
+//     if (e.type == SDL_MOUSEBUTTONDOWN) {
+//         if (e.button.button == SDL_BUTTON_LEFT) {
+//             handleMouseLeftBtnDown(e.button);
+//         }
+//         if (e.button.button == SDL_BUTTON_RIGHT) {
+//             handleMouseRightBtnDown(e.button);
+//         }
+//     }
+//     if (e.type == SDL_KEYDOWN) {
+//         handleKeyDown(e.key);
+//     }
+// }

@@ -1,5 +1,6 @@
 #pragma once
 #include "matrix.hpp"
+#include "mouse.hpp"
 #include "pch.hpp"
 #include "renderer.hpp"
 #include "window.hpp"
@@ -37,9 +38,12 @@ class Context final {
     Context(Window&& window, Renderer&& renderer, Map&& map, int mineCount);
 
     void drawOneTile(int x, int y, const Tile& tile);
-    void handleMouseLeftBtnDown(const SDL_MouseButtonEvent&);
-    void handleMouseRightBtnDown(const SDL_MouseButtonEvent&);
+    void handleMouseLeftBtnDown(const SDL_Point&);
+    void handleMouseRightBtnDown(const SDL_Point&);
     void handleKeyDown(const SDL_KeyboardEvent&);
+    void handleMouseBothPressed(const SDL_Point&);
+    void handleMouseBothPressing(const SDL_Point&);
+    void handleMouseBothReleased(const SDL_Point&);
 
    public:
     GameState state = Gaming;
@@ -53,6 +57,7 @@ class Context final {
     Window window;
     Renderer renderer;
     Map map;
+    Mouse mouse;
     int nakedCount;
     int mineCount;
 
@@ -79,5 +84,6 @@ class Context final {
     }
 
     void DrawMap();
-    void HandleEvent(SDL_Event&);
+    // void HandleEvent(SDL_Event&);
+    void HandleEvents(std::vector<SDL_Event>& events);
 };

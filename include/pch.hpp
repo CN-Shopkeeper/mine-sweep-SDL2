@@ -1,8 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <random>
-#include <string>
 #include <stack>
+#include <string>
 
 #include "SDL.h"
