@@ -9,6 +9,8 @@ class Matrix final {
     int w_;
     int h_;
 
+    std::optional<SDL_Point> highlight_ = std::nullopt;
+
    public:
     Matrix(int w, int h)
         : data_(std::unique_ptr<T[]>(new T[w * h])), w_(w), h_(h) {}
@@ -34,4 +36,16 @@ class Matrix final {
     bool IsIn(int x, int y) const {
         return x >= 0 && x < w_ && y >= 0 && y < h_;
     }
+
+    void SetHighlight(SDL_Point p) {
+        if (IsIn(p.x, p.y)) {
+            highlight_ = p;
+        } else {
+            highlight_ = std::nullopt;
+        }
+    }
+
+    void RemoveHeight() { highlight_ = std::nullopt; }
+
+    std::optional<SDL_Point> GetHightlight() const { return highlight_; }
 };
