@@ -38,15 +38,14 @@ void floodFill(Context& ctx, Map& map, int x, int y) {
         return;
     }
     auto tile = map.Get(x, y);
-    if (!tile.isVisiable && !tile.isFlaged && tile.type != Tile::Mine) {
+    if (!tile.isVisiable && !tile.isFlaged) {
         std::stack<SDL_Point> s;
         s.push({x, y});
         while (!s.empty()) {
             auto point = s.top();
             s.pop();
             auto& tile_ = map.Get(point.x, point.y);
-            if (!tile_.isVisiable && !tile_.isFlaged &&
-                tile.type != Tile::Mine) {
+            if (!tile_.isVisiable && !tile_.isFlaged) {
                 tile_.isVisiable = true;
                 ctx.nakedCount++;
             } else {
@@ -214,6 +213,15 @@ void Context::handleMouseBothReleased(const SDL_Point& p) {
                     if (map.IsIn(detectX, detectY)) {
                         auto& tile_ = map.Get(detectX, detectY);
                         if (!tile_.isVisiable && !tile_.isFlaged) {
+                            if (tile_.type == Tile::Mine) {
+                                state = GameState::Explode;
+                                for (int i = 0; i < map.MaxSize(); i++) {
+                                    auto& tile = map.GetByIndex(i);
+                                    tile.isVisiable = true;
+                                    tile.isFlaged = false;
+                                }
+                                return;
+                            }
                             floodFill(*this, map, detectX, detectY);
                         }
                     }
