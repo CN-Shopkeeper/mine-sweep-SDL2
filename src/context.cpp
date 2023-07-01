@@ -411,8 +411,6 @@ void Context::HandleEvents(std::vector<SDL_Event>& events) {
         handleMouseBothPressed(mouse.Position());
     } else if (mouse.LeftBtn().IsReleased() && mouse.RightBtn().IsReleased()) {
         handleMouseBothReleased(mouse.Position());
-        SDL_Log("released");
-
     } else if (mouse.LeftBtn().IsReleasing() &&
                mouse.RightBtn().IsReleasing()) {
         map.RemoveHeight();
@@ -422,7 +420,6 @@ void Context::HandleEvents(std::vector<SDL_Event>& events) {
         }
         if (mouse.RightBtn().IsPressed()) {
             handleMouseRightBtnDown(mouse.Position());
-            SDL_Log("right");
         }
     }
 }
